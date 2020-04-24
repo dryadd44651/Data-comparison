@@ -1,0 +1,223 @@
+---
+title: "R Data comparison"
+output: html_notebook
+---
+
+```{r}
+library(boot)
+library(rmarkdown)
+this.dir <- paste(rstudioapi::getSourceEditorContext()$path,"/..")
+setwd(this.dir)
+```
+
+
+
+
+# Let's see how to test similarity of two sample 1
+## observing the summary and graph
+We can analysis with summary,IQR,sd,boxplot,CI,T test, F test
+From data analysis we can find out the different
+The CI of remote and local are not even overlap.
+
+```{r}
+ci=function(x)
+{
+  error <- qnorm(0.975)*sd(x)/sqrt(length(x))
+  m =mean(x)
+  res = c(m-error,m+error)
+  return(res)
+  
+}
+
+data=read.csv(file="VOLTAGE.csv", header = TRUE, sep=',')
+
+#separate the data for remote and local locations
+remote=subset(data, location=="0")
+local=subset(data, location=="1")
+
+#summary Statistics of the Remote Locations
+print(paste("Remot IQR:",IQR(remote$voltage),"SD",sd(remote$voltage)) )
+summary(remote$voltage)
+print("==================")
+print(paste("Local IQR:",IQR(local$voltage),"SD",sd(local$voltage)) )
+#summary Statistics of the local Locations
+summary(local$voltage)
+
+par(mfrow = c(1, 1))
+boxplot(remote$voltage,local$voltage,ylab="Voltage Readings",names=c("Remote","Local"), main="Boxplots of Voltage readings")
+
+
+print(paste("remot CI",ci(remote$voltage),"local CI",ci(local$voltage),"Diff CI",ci(remote$voltage-local$voltage)))
+
+#find the 95% CI for remote, local and diff(remote,local)
+#95 percent confidence interval:  0.1172284 0.6454382
+#2. the CI of remote and local are not even overlap.
+#the CI of diff(remote,local) is relative big
+
+
+```
+## test the data
+```{r}
+#normal qqPlots
+par(mfrow=c(1,2))
+#if p-value > 0.05 Normality
+#remote data is non normal
+shapiro.test(remote$voltage)
+#local data is normal
+shapiro.test(local$voltage)
+
+#size > 26, we can run test
+length(remote$voltage)
+
+#normal data should be a slop line
+par(mfrow = c(1, 2))
+qqnorm(remote$voltage, main = "Remote")
+qqline(remote$voltage)
+qqnorm(local$voltage, main = "Local")
+qqline(local$voltage)
+
+# p value < 0.05
+# They don't have same mean(reject H0)
+t.test(remote$voltage, local$voltage, alternative = "two.sided", conf.level = 0.95, var.equal = FALSE)
+# p value > 0.05
+# we can't deny they have same variance(can't reject H0)
+var.test(remote$voltage, local$voltage,conf.level = 0.95)
+
+```
+# Let's see how to test similarity of two sample 2
+## observing the summary and graph
+
+```{r}
+
+data=read.csv(file="VAPOR.csv", header = TRUE, sep=',')
+
+# boxplots
+par(mfrow = c(1, 1))
+boxplot(data$theoretical,data$experimental,names=c("Theoritical","Experimental"))
+
+
+# histograms and QQ plots for theoritical and experimental values
+par(mfrow = c(1, 2))
+hist(data[,2],main="Histogram of Theoritical values", xlab = "Theoritical values")
+qqnorm(data[,2])
+qqline(data[,2])
+
+hist(data[,3],main="Histogram of Experimental values", xlab = "Experimental values")
+qqnorm(data[,3])
+qqline(data[,3])
+
+
+# histogram and QQ plot of differences
+diff <- data[,2] - data[,3]
+
+boxplot(diff, main = 'Diff')
+hist(diff)
+qqnorm(diff)
+qqline(diff)
+
+#observe by graph: similar
+
+
+
+```
+## test the data
+Both p-value are close to 1
+
+H0 can't be reject (theoretical = experimental)
+```{r}
+#oberve by t.test f.test
+#two p value near 1 => almost same
+t.test(data$theoretical, data$experimental, alternative = "two.sided", conf.level = 0.95, var.equal = FALSE)
+var.test(data$theoretical, data$experimental, alternative = "two.sided", conf.level = 0.95, var.equal = FALSE)
+```
+
+
+```{r}
+#function to calculate mean
+calculated.mean <- function(x, indices) {
+  result= mean(x[indices])
+  return (result)
+}
+
+
+#the sample is small, so we do the boostrap to get the CI
+#the interval is also near zero => no different
+mean.boot=boot(diff,calculated.mean, R = 999, sim = "ordinary", stype = "i")
+boot.ci(mean.boot,conf=0.95,type="perc") 
+```
+
+# Let's see how to test correlation of two sample
+observing the temperature data
+```{r}
+data = read.csv(file = "bodytemp-heartrate.csv", header = TRUE, sep = ',')
+
+data.male=subset(data, gender=="1")
+data.female=subset(data, gender=="2")
+par(mfrow = c(2,2))
+
+#boxplots of body temparature vs gender
+boxplot(data.male$body_temperature, data.female$body_temperature, names=c("male","female"))
+
+#qq plots for male and female body temperature
+qqnorm(data.male$body_temperature, main="Normal Q-Q Plot for males")
+qqnorm(data.female$body_temperature, main="Normal Q-Q Plot for females")
+```
+
+
+observing the heart rate data
+
+```{r}
+par(mfrow = c(2,2))
+
+#boxplots ofheart rate vs gender
+boxplot(data.male$heart_rate, data.female$heart_rate, names=c("male","female"))
+
+#qq plots for male and female heart rates
+qqnorm(data.male$heart_rate, main="Normal Q-Q Plot for males")
+qqnorm(data.female$heart_rate, main="Normal Q-Q Plot for females")
+
+```
+observing the points
+```{r}
+par(mfrow = c(1, 1))
+
+#scatterplots between heart rate and body temperature for males and females
+plot(body_temperature ~ heart_rate, data = data.male,ylim = range(data$body_temperature), xlim = range(data$heart_rate))
+points(body_temperature ~ heart_rate, data = data.female, pch =19)
+```
+## test for male Correlation 
+Correlation :0.1955894 
+
+p-value = 0.1184 => correlation is equal to 0
+```{r}
+cor.test(data.male$body_temperature, data.male$heart_rate)
+```
+## test for female Correlation 
+Correlation :0.2869312  
+
+p-value = 0.02048 => correlation is not equal to 0
+```{r}
+cor.test(data.female$body_temperature, data.female$heart_rate)
+
+```
+## Let's do the regression and check the result for male
+p-value: 0.1184 => can't reject H0 (the weight should be 0)
+R-squared:  0.03826 => bad fit
+Estimate 0.02326 => the weight is low which mean bad parameter
+```{r}
+male.reg=lm(data.male$body_temperature~data.male$heart_rate)
+summary(male.reg)
+```
+
+## Let's do the regression and check the result for female
+p-value  : 0.0205 => reject H0  (the weight should be not 0)
+
+R-squared:  0.08233 => bad fit(batter than male)
+
+Estimate 0.02632 => the weight is low which mean bad parameter
+```{r}
+female.reg=lm(data.female$body_temperature~data.female$heart_rate)
+summary(female.reg)
+```
+# Over all, male and female have bad Correlation(heartbeat rate to temperture)
+# But we can't reject female's heartbeat rate have correlation with temperature
