@@ -3,22 +3,14 @@ This project show us how to calculate the similarity and correlation between two
 
 # Basic analysis
 *we can use the commond function to check the data similarity*
-- summary
->- Min. 1st Qu.  Median    Mean 3rd Qu.    Max
-- IQR
->- IQR = Q3 − Q1
-- var
->- Variance
-- cov
->- Covariance  
-- cor
->- Correlation(relations between 2 data)
-- hist
->- histogram
-- qqnorm
->- check the data normality
-- boxplot
->- check data distribution and outlier
+- summary: Min. 1st Qu.  Median    Mean 3rd Qu.    Max
+- IQR: IQR = Q3 − Q1
+- var: Variance
+- cov: Covariance  
+- cor: Correlation(relations between 2 data)
+- hist: histogram
+- qqnorm: check the data normality
+- boxplot: check data distribution and outlier
 
 # Data similarity
 *Data a and b belong to same Population should pass T test and F test*
