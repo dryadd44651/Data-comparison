@@ -24,6 +24,7 @@ This project show us how to calculate the similarity and correlation between two
 *Data a and b belong to same Population should pass T test and F test*
 
 **Before we do the T test and F test**
+
 *we should make sure data is normal or size>26*
 - shapiro.test
 >- H0: data is normal
